@@ -1,0 +1,62 @@
+// color
+$activeColor: #7bfffb;
+$normalColor: #92a7ad;
+$lightColor: #36c9c5;
+$inputBorder: #1e485d;
+$inputHoverColor: #114b54;
+$selectBg: #114b54;
+$selectBorder: #114b54;
+$activeBorder: #45ffff;
+$selectInnerBg: #1a7275; // 下拉框背景色
+$tableTabBg: #1f3961;
+$red: #ff4646;
+$yellow: #f8ff41;
+$green: #4cff8b;
+$fontColor: #bed8de;
+// font-size
+$bigSize: 22px;
+$smallSize: 14px;
+$middleSize: 16px;
+$smallerSize: 12px;
+// font color
+$tableThColor: rgba(13, 39, 51, 0.5);
+$tableTrColor: #d5d5d5;
+$tableHoverColor: rgba(15, 49, 57, 0.5);
+$offRed: #fc5454;
+$promptRed: #e81d62;
+// dialog 
+$dialogBorder: #114b54;
+$dialogBg:#011f4c;
+// line
+$lineBg: #00ffff;
+$deviceBg: #0d205c;
+// input
+$inputIcon: #69e3fa;
+//page
+$pageBg:#121c25;
+//block
+$blockBg: #0c171e;
+$Bg: #182530;
+$titleBg: rgba(13, 39, 51, 0.5);
+$borderColor: #1a7275;
+// sidebar
+$menuText:#fff;
+$menuActiveText:#03e7ef;
+$subMenuActiveText:#03e7ef; // https://github.com/ElemeFE/element/issues/12951
+$menuBg:#0f2d70;
+$menuHover:#0b245d;
+$subMenuBg:#05225c;
+$subMenuHover:#0b245d;
+$sideBarWidth: 200px;
+// the :export directive is the magic sauce for webpack
+// https://www.bluematador.com/blog/how-to-share-variables-between-js-and-sass
+:export {
+    menuText: $menuText;
+    menuActiveText: $menuActiveText;
+    subMenuActiveText: $subMenuActiveText;
+    menuBg: $menuBg;
+    menuHover: $menuHover;
+    subMenuBg: $subMenuBg;
+    subMenuHover: $subMenuHover;
+    sideBarWidth: $sideBarWidth;
+}

@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <nav>
-      <router-link to="/">BasicTopo</router-link> |
+      <router-link to="/">myTopo</router-link> |
       <router-link to="/topo">DragTopo</router-link> |
       <router-link to="/treetopo">TreeTopo</router-link> 
     </nav>

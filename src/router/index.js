@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import BasicTopo from '../views/BasicTopo.vue'
 import TreeTopo from '../views/TreeTopo.vue'
+import MyTopo from '../views/topo/index.vue'
 
 Vue.use(VueRouter)
 
@@ -9,7 +9,7 @@ const routes = [
     {
         path: '/',
         name: 'home',
-        component: BasicTopo
+        component: MyTopo
     },
     {
         path: '/topo',
