@@ -18,10 +18,10 @@
 </template>
 
 <script>
-
 // import { addTopoData } from "@/api/topo.js";
-import { Graph } from "@antv/g6";
-
+/* eslint-disable */
+import { Graph, NodeEvent, EdgeEvent } from "@antv/g6";
+/* eslint-disable */
 export default {
     name: "MyTopo",
     components: {},
@@ -31,18 +31,10 @@ export default {
         return {
             type: "", // 编辑模式edit 详情模式detail
             graph: null, // 图表实例
-            gridSize: 20,
-            startNode: null,
-            endNode: null,
-            lineStart: null, //画线起点
-            lineEnd: null, // 画线终点
-            lineType: "Link", // 连线类型
-            link: null, // 连线
-            currentNode: {}, // 当前节点
-            currentLink: {}, //当前连线
-            virtualNode: null, //解决缩放拖拽问题
-            scale: 0.95,
-            isShowRightMenu: false,
+            gridSize: 0,
+            selectedNodes: [], // 被选中的节点
+            nodeCounter: 0,
+
             rightMenu: {
                 nodeRootMenu: [
                     {
@@ -75,58 +67,18 @@ export default {
                     },
                 ],
             },
-            rightMenuPosition: {
-                top: 0,
-                left: 0,
-            },
-            nodeKey: [
-                // "elementType", // 区分是节点 还是线
-                "nodeType", // 设备类型（交换机、PC，区分鼠标右键操作）
-                "x", // 节点中心坐标x
-                "y", // 节点中心坐标x
-                "width", //节点宽度
-                "height", // 节点高度
-                "nodeId", //前端自动生成的唯一标识
-                "deviceId", // 节点绑定的设备id
-                "deviceType", // 节点绑定的设备类型
-                "parentId", // 父节点
-                "children", // 关联子节点
-                "deviceInfo", // 绑定的设备信息
-                "text", // 文本描述
-                "zIndex", // 层级
-                "fontColor", // 字体颜色
-                // "icon", // 设备icon（base64）
-            ],
-            lineKey: [
-                // "elementType", // 区分是节点 还是线
-                "arrowsRadius", // 终点箭头大小
-                "lineWidth", // 线宽
-                "nodeStartId", // 起始节点
-                "nodeEndId", // 终止节点
-                "isEditable", // 是否可删除
-                "linkType", // 连线类型（直线、折线）
-                "zIndex", // 层级
-            ],
-            wheelZoom: 0.85,
-            textOffsetY: 5,
-            dashedPattern: 5,
-            maxChildrenLength: 0, // 最大子节点数
-            defaultNodeWidth: 40, // 默认节点宽度
-            defaultNodeHeigth: 40, // 默认节点高度
-            mouseDownPosition: null, // 鼠标操作的目标
+
+
         };
     },
     created() { },
     mounted() {
         this.initGraph();
+        this.bindEvents();
         this.setupResizeListener();
     },
     methods: {
         initGraph() {
-            document.documentElement.oncontextmenu = () => {
-                // 浏览器默认右键菜单隐藏
-                return false;
-            };
             this.graph = new Graph({
                 container: this.$refs.container,
                 width: this.$refs.container.clientWidth,
@@ -161,7 +113,7 @@ export default {
                         type: "grid-line",
                         size: this.gridSize,
                         color: "#ccc",
-                        visible: true,
+                        visible: false,
                     },
                     {
                         type: 'contextmenu',
@@ -230,33 +182,157 @@ export default {
                     },
                 ],
             });
-            console.log(this.graph, "graph", Graph.version);
-
             this.graph.render();
         },
-        createMenuFromItems(items) {
-            return items.map(item =>
-                `<div class="menu-item" data-key="${item.key}" style="${item.style || ''}">
-                    ${item.name} </div>`
-            ).join('');
-        },
-        setupResizeListener() {
-            window.addEventListener("resize", () => {
-                if (this.graph && this.$refs.container) {
-                    this.graph.setSize(
-                        this.$refs.container.clientWidth,
-                        this.$refs.container.clientHeight
-                    );
+
+
+        bindEvents() {
+            // 选中节点
+            this.graph.on(NodeEvent.CLICK, (event) => {
+                // 移除调试代码
+                const { target } = event; // 获取被点击节点的 ID
+
+                if (!target || !target.id) {
+                    console.warn('点击事件中未找到有效的节点ID');
+                    return;
+                }
+
+                console.log(`节点 ${target.id} 被点击了`);
+
+                // 获取节点数据
+                const nodeData = this.graph.getNodeData(target.id);
+                if (!nodeData) {
+                    console.warn(`无法获取节点 ${target.id} 的数据`);
+                    return;
+                }
+
+                console.log('节点数据:', nodeData);
+
+                // 防止重复选中同一节点
+                const isNodeAlreadySelected = this.selectedNodes.some(node =>
+                    typeof node === 'object' ? node.id === nodeData.id : node === nodeData.id
+                );
+                if (isNodeAlreadySelected) {
+                    console.log(`节点 ${target.id} 已经被选中`);
+                    return;
+                }
+
+                // 修改节点状态
+                this.graph.setElementState(target.id, 'selected');
+                this.selectedNodes.push(nodeData);
+
+                // 如果选中了2个节点，创建连线
+                if (this.selectedNodes.length === 2) {
+                    this.createEdgeBetweenNodes(this.selectedNodes[0], this.selectedNodes[1]);
+                    this.clearSelection();
                 }
             });
         },
-        addTopoData() { },
-        resize() { },
-        setCanvasArea() {
-            let center = this.$refs.center;
-            this.canvas.width = Math.floor(center.offsetWidth);
-            this.canvas.height = Math.floor(center.offsetHeight);
+        // 4. 创建连线的函数
+        createEdgeBetweenNodes(sourceNode, targetNode) {
+            // 在G6 v5.x中，节点数据结构可能不同，需要适配新的API
+            // 尝试多种方式获取节点ID
+            let sourceId, targetId;
+
+            // 方式1: 直接从节点对象获取id属性
+            if (sourceNode.id && targetNode.id) {
+                sourceId = sourceNode.id;
+                targetId = targetNode.id;
+            }
+            // 方式2: 如果有getModel方法（兼容旧版）
+            else if (typeof sourceNode.getModel === 'function' && typeof targetNode.getModel === 'function') {
+                sourceId = sourceNode.getModel().id;
+                targetId = targetNode.getModel().id;
+            }
+            // 方式3: 如果节点对象本身就是数据对象
+            else if (sourceNode.data && targetNode.data) {
+                sourceId = sourceNode.data?.id || sourceNode.id;
+                targetId = targetNode.data?.id || targetNode.id;
+            } else {
+                console.error('无法获取节点ID:', sourceNode, targetNode);
+                return;
+            }
+
+            // 避免自连接
+            if (sourceId === targetId) {
+                console.log('不能连接节点到自身');
+                return;
+            }
+
+            // 检查边是否已存在
+            const edges = this.graph.getData().edges || [];
+            const edgeExists = edges.some(edge =>
+                (edge.source === sourceId && edge.target === targetId) ||
+                (edge.source === targetId && edge.target === sourceId)
+            );
+
+            if (edgeExists) {
+                console.log('边已存在');
+                return;
+            }
+
+            // 创建新边
+            const newEdge = {
+                id: `edge_${sourceId}_${targetId}_${Date.now()}`,
+                source: sourceId,
+                target: targetId,
+                label: `连线${edges.length + 1}`,
+            };
+
+            // 添加边
+            this.graph.addData({
+                edges: [newEdge]
+            });
+            this.graph.render();
+
+            console.log(`已创建连接: ${sourceId} -> ${targetId}`);
+
+            // 可选：添加创建成功的视觉反馈
+            this.highlightNewEdge(newEdge.id);
         },
+
+        // 5. 清除选中状态
+        clearSelection() {
+            // 在 G6 v5.x 中，可能需要使用不同的方法来设置元素状态
+            this.selectedNodes.forEach(node => {
+                const nodeId = typeof node === 'object' ? node.id : node;
+                if (nodeId) {
+                    this.graph.setElementState(nodeId, 'selected', false);
+                }
+            });
+            this.selectedNodes = [];
+            console.log('已清除选中状态');
+        },
+
+        // 6. 高亮新创建的边（可选）
+        highlightNewEdge(edgeId) {
+            // 在 G6 v5.x 中，使用 getData 获取元素，而不是 findById
+            const edges = this.graph.getData().edges || [];
+            const edge = edges.find(e => e.id === edgeId);
+
+            if (edge) {
+                // 设置边的状态为激活
+                this.graph.setElementState(edgeId, 'active', true);
+
+                // 3秒后取消高亮
+                setTimeout(() => {
+                    this.graph.setElementState(edgeId, 'active', false);
+                }, 3000);
+            }
+        },
+        setupResizeListener() {
+            window.addEventListener("resize", this.resize);
+        },
+        addTopoData() { },
+        resize() {
+            if (this.graph && this.$refs.container) {
+                this.graph.setSize(
+                    this.$refs.container.clientWidth,
+                    this.$refs.container.clientHeight
+                );
+            }
+        },
+
         // 添加节点
         addNode(node) {
             const newNode = {
@@ -278,55 +354,6 @@ export default {
             });
 
             this.graph.render();
-            // let node = new JTopo.Node();
-            // // 节点图片
-            // let icon = require(`@/assets/images/topo/${nodeData.nodeType}.png`);
-            // if (icon) {
-            //     node.setImage(icon);
-            //     node.icon = icon;
-            // }
-            // // 节点数据
-            // node.nodeId = nodeData.nodeId ? nodeData.nodeId : generateUUID(); // 唯一ID
-            // node.deviceId = nodeData.deviceId; // 绑定的设备id
-            // node.deviceType = nodeData.deviceType; // 绑定的设备类型
-            // node.nodeType = nodeData.nodeType; // 设备类型（交换机、PC，区分鼠标右键操作）
-            // node.deviceInfo = nodeData.deviceInfo ? nodeData.deviceInfo : null; // 绑定的设备信息
-            // node.text = nodeData.text; // 文字描述
-            // node.textOffsetY = this.textOffsetY; // 文字的向下偏移量
-            // // this.type == "edit" && (node.text = nodeData.text); // 文字描述
-            // node.children = nodeData.children ? nodeData.children : []; // 关联设备信息
-            // node.fontColor = nodeData.fontColor || "255,255,255"; // 字体颜色
-            // nodeData.parentId && (node.parentId = nodeData.parentId); // 父节点
-            // nodeData.zIndex && (node.zIndex = nodeData.zIndex); // 节点层级
-            // // 详情页不支持拖拽
-            // if (this.type == "detail") {
-            //     node.dragable = false;
-            // }
-            // // if (this.type == "edit") {
-            // //     // 进行了缩放 保证节点的放置位置
-            // //     this.virtualNode = node;
-            // //     node.visible = false;
-            // // }
-            // // node.editAble = nodeData.editAble || true
-            // this.scene.add(node);
-            // node.addEventListener("mouseup", (e) => {
-            //     if (this.type == "edit" && e.button == 2) {
-            //         // 右键
-            //         this.currentNode = node;
-            //         this.rightMenuType =
-            //             node.nodeType == "Switch" ? "nodeRootMenu" : "nodeMenu";
-            //         this.isShowRightMenu = true;
-            //         this.rightMenuPosition.top = e.pageY;
-            //         this.rightMenuPosition.left = e.pageX;
-            //     }
-            // });
-            // node.addEventListener("mouseover", (e) => {
-            //     this.$emit("nodeHover", { e, node });
-            // });
-            // node.addEventListener("mouseout", (e) => {
-            //     this.$emit("nodeMouseOut", { e, node });
-            // });
-            // return node;
         },
 
         handleDrop(e) {
@@ -624,16 +651,11 @@ export default {
             this.graph.destroy();
         }
         window.removeEventListener("resize", this.resize);
-        document.documentElement.oncontextmenu = () => {
-            return true;
-        };
     },
 };
 </script>
 
 <style scoped lang="scss">
-/* 确保菜单可见的基础样式 */
-
 .center {
     width: 100%;
     //   background-color: #182530;
