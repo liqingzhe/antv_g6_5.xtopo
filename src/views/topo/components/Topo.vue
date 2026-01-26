@@ -1,19 +1,6 @@
 <template>
     <div ref="center" class="center">
         <div ref="container" class="graph-container" @drop="handleDrop" @dragover="handleDragOver"></div>
-
-        <!-- 鼠标右键操作框 -->
-        <div v-if="isShowRightMenu" class="box-card" :style="'top:' +
-            rightMenuPosition.top +
-            'px;left:' +
-            rightMenuPosition.left +
-            'px'
-            ">
-            <div v-for="item in rightMenu[rightMenuType]" :key="item.text" class="card"
-                @click="rightClickHandler(item)">
-                {{ item.text }}
-            </div>
-        </div>
     </div>
 </template>
 
@@ -34,41 +21,6 @@ export default {
             gridSize: 0,
             selectedNodes: [], // 被选中的节点
             nodeCounter: 0,
-
-            rightMenu: {
-                nodeRootMenu: [
-                    {
-                        text: "绑定设备",
-                        type: "bindDevice",
-                    },
-                    {
-                        text: "绑定关联设备",
-                        type: "bindLinkDevice",
-                    },
-                    {
-                        text: "删除",
-                        // type: "delete",
-                    },
-                    {
-                        text: "删除关联设备",
-                        // type: "deleteLinkDevice",
-                    },
-                ],
-                nodeMenu: [
-                    {
-                        text: "删除",
-                        // type: "delete",
-                    },
-                ],
-                linkMenu: [
-                    {
-                        text: "删除",
-                        // type: "delete",
-                    },
-                ],
-            },
-
-
         };
     },
     created() { },
@@ -86,18 +38,27 @@ export default {
                 data: { nodes: [], edges: [] },
                 node: {
                     style: {
-                        size: 50,
+                        size: 45,
                         fill: "#e6f7ff",
+                        fillOpacity: 0,
                         stroke: "#1890ff",
-                        lineWidth: 2,
+                        lineWidth: 0,
+                        labelFontSize: 12,
+                        // 默认设置
+                        // labelPlacement: 'bottom',
+                        // // 多行文本添加
+                        // labelMaxWidth: '200%',
+                        // labelMaxLines: 1,
+                        // labelTextOverflow: 'ellipsis',
+                        labelTextAlign: 'center' // 默认left
                     },
                     labelText: (d) => d.data.label,
                 },
 
                 edge: {
                     style: {
-                        stroke: "#8c8c8c",
-                        lineWidth: 2,
+                        stroke: "#fff",
+                        lineWidth: 1,
                     },
                 },
 
@@ -169,7 +130,7 @@ export default {
                                 case 'delete-edge':
                                     if (current?.id) {
                                         this.graph.removeData({ edges: [current.id] });
-                                        console.log(`已删除连线: ${current.id}`);
+                                        this.graph.render();
                                     }
                                     break;
                                 default:
@@ -336,23 +297,23 @@ export default {
         // 添加节点
         addNode(node) {
             const newNode = {
+                type: 'rect',
                 id: node.id,
                 data: {
                     label: `${node.label}`,
                     type: node.type,
-                    status: "online",
                 },
                 style: {
                     x: node.x,
                     y: node.y,
-                    fill: node.color || "#000",
-                    stroke: node.borderColor || "#000",
+                    iconWidth: node.iconWidth,
+                    iconHeight: node.iconHeight,
+                    iconSrc: node.iconSrc || "",
                 },
             };
             this.graph.addData({
                 nodes: [newNode],
             });
-
             this.graph.render();
         },
 
@@ -368,13 +329,13 @@ export default {
 
             this.addNode({
                 id: `node-${Date.now()}`,
+                type: nodeData.nodeType,
                 label: nodeData.label,
                 x,
                 y,
-                type: nodeData.nodeType,
-                style: {
-                    fill: "#1890ff",
-                },
+                iconSrc: nodeData.iconSrc,
+                iconWidth: nodeData.iconWidth,
+                iconHeight: nodeData.iconHeight,
             });
         },
 
@@ -382,268 +343,174 @@ export default {
             e.preventDefault();
             e.dataTransfer.dropEffect = "copy";
         },
-        rightClickHandler(item) {
-            if (item.type == "bindDevice") {
-                // 为图标组件绑定具体设备
-                this.$emit("bindDevice", {
-                    text: item.text,
-                    type: item.type,
-                    node: this.currentNode,
-                });
-            } else if (item.type == "bindLinkDevice") {
-                if (!this.currentNode.deviceId) {
-                    this.$message.warning("请先绑定设备");
-                    return false;
-                }
-                this.$emit("bindDevice", {
-                    text: item.text,
-                    type: item.type,
-                    node: this.currentNode,
-                });
-            } else if (item.type == "delete") {
-                if (this.rightMenuType == "nodeMenu") {
-                    // 删除设备
-                    if (this.currentNode.parentId) {
-                        let nodes =
-                            this.scene.findElements((e) => {
-                                return e.nodeId == this.currentNode.parentId;
-                            }) || []; // 父节点手动删除该数据字段
-                        nodes.forEach((node) => {
-                            let index = node.children.findIndex((iitem) => {
-                                return iitem.deviceId == this.currentNode.deviceId;
-                            });
-                            node.children.splice(index, 1);
-                        });
-                    }
-                    this.scene.remove(this.currentNode);
-                    this.currentNode = null;
-                } else if (this.rightMenuType == "linkMenu") {
-                    // 删除连线
-                    this.scene.remove(this.currentLink);
-                    this.currentLink = null;
-                } else if (this.rightMenuType == "nodeRootMenu") {
-                    if (this.currentNode.children && this.currentNode.children.length) {
-                        // 删除选中节点及其子节点
-                        this.removeChildrenNodes();
-                        this.currentNode.children = null;
-                    }
-                    this.scene.remove(this.currentNode);
-                    this.currentNode = null;
-                }
-            } else {
-                // 刪除关联设备
-                this.$confirm("确认删除关联设备？", "删除提示", {
-                    confirmButtonText: "确定",
-                    cancelButtonText: "取消",
-                    cancelButtonClass: "cancel-btn",
-                    confirmButtonClass: "confirm-btn",
-                    type: "warning",
-                })
-                    .then(() => {
-                        this.removeChildrenNodes();
-                        this.currentNode.children = null;
-                    })
-                    .catch(() => {
-                        this.$message({
-                            type: "info",
-                            message: "已取消删除",
-                        });
-                    });
-            }
-            this.isShowRightMenu = false;
-            return false;
-        },
+        // rightClickHandler(item) {
+        //     if (item.type == "bindDevice") {
+        //         // 为图标组件绑定具体设备
+        //         this.$emit("bindDevice", {
+        //             text: item.text,
+        //             type: item.type,
+        //             node: this.currentNode,
+        //         });
+        //     } else if (item.type == "bindLinkDevice") {
+        //         if (!this.currentNode.deviceId) {
+        //             this.$message.warning("请先绑定设备");
+        //             return false;
+        //         }
+        //         this.$emit("bindDevice", {
+        //             text: item.text,
+        //             type: item.type,
+        //             node: this.currentNode,
+        //         });
+        //     } else if (item.type == "delete") {
+        //         if (this.rightMenuType == "nodeMenu") {
+        //             // 删除设备
+        //             if (this.currentNode.parentId) {
+        //                 let nodes =
+        //                     this.scene.findElements((e) => {
+        //                         return e.nodeId == this.currentNode.parentId;
+        //                     }) || []; // 父节点手动删除该数据字段
+        //                 nodes.forEach((node) => {
+        //                     let index = node.children.findIndex((iitem) => {
+        //                         return iitem.deviceId == this.currentNode.deviceId;
+        //                     });
+        //                     node.children.splice(index, 1);
+        //                 });
+        //             }
+        //             this.scene.remove(this.currentNode);
+        //             this.currentNode = null;
+        //         } else if (this.rightMenuType == "linkMenu") {
+        //             // 删除连线
+        //             this.scene.remove(this.currentLink);
+        //             this.currentLink = null;
+        //         } else if (this.rightMenuType == "nodeRootMenu") {
+        //             if (this.currentNode.children && this.currentNode.children.length) {
+        //                 // 删除选中节点及其子节点
+        //                 this.removeChildrenNodes();
+        //                 this.currentNode.children = null;
+        //             }
+        //             this.scene.remove(this.currentNode);
+        //             this.currentNode = null;
+        //         }
+        //     } else {
+        //         // 刪除关联设备
+        //         this.$confirm("确认删除关联设备？", "删除提示", {
+        //             confirmButtonText: "确定",
+        //             cancelButtonText: "取消",
+        //             cancelButtonClass: "cancel-btn",
+        //             confirmButtonClass: "confirm-btn",
+        //             type: "warning",
+        //         })
+        //             .then(() => {
+        //                 this.removeChildrenNodes();
+        //                 this.currentNode.children = null;
+        //             })
+        //             .catch(() => {
+        //                 this.$message({
+        //                     type: "info",
+        //                     message: "已取消删除",
+        //                 });
+        //             });
+        //     }
+        //     this.isShowRightMenu = false;
+        //     return false;
+        // },
         clearCanvas() {
             this.scene.clear();
         },
-        setBindData({ data, type }) {
-            if (type == "bindDevice") {
-                // 绑定设备
-                this.currentNode.deviceId = data[0].deviceId; // 设备id
-                this.currentNode.deviceType = data[0].deviceType; // 设备类型
-                this.currentNode.deviceInfo = data[0].deviceInfo;
-                this.currentNode.text = data[0].name;
-            } else if (type == "bindLinkDevice") {
-                // 绑定关联设备 自动生成拓扑图
-                // todo 在画布中绘制。。。
-                this.removeChildrenNodes();
-                let children = data.map((item) => {
-                    return {
-                        deviceId: item.deviceId,
-                        deviceType: item.deviceType,
-                        text: item.name,
-                        deviceInfo: item.deviceInfo,
-                        parentId: this.currentNode.nodeId,
-                    };
-                });
-                this.currentNode.children = children;
-                this.gotoDraw(this.currentNode);
-            }
-        },
+        // setBindData({ data, type }) {
+        //     if (type == "bindDevice") {
+        //         // 绑定设备
+        //         this.currentNode.deviceId = data[0].deviceId; // 设备id
+        //         this.currentNode.deviceType = data[0].deviceType; // 设备类型
+        //         this.currentNode.deviceInfo = data[0].deviceInfo;
+        //         this.currentNode.text = data[0].name;
+        //     } else if (type == "bindLinkDevice") {
+        //         // 绑定关联设备 自动生成拓扑图
+        //         // todo 在画布中绘制。。。
+        //         this.removeChildrenNodes();
+        //         let children = data.map((item) => {
+        //             return {
+        //                 deviceId: item.deviceId,
+        //                 deviceType: item.deviceType,
+        //                 text: item.name,
+        //                 deviceInfo: item.deviceInfo,
+        //                 parentId: this.currentNode.nodeId,
+        //             };
+        //         });
+        //         this.currentNode.children = children;
+        //         this.gotoDraw(this.currentNode);
+        //     }
+        // },
         addLink() { },
-        generateTree(parentNode, children) {
-            const deviceTypeList = {
-                1: "Server",
-                2: "Switch",
-                3: "Input",
-                4: "Export",
-            };
-            if (children.length) {
-                for (let i = 0; i < children.length; i++) {
-                    let nodeType = deviceTypeList[children[i].deviceType];
-                    children[i].nodeType = nodeType;
-                    let node = this.addNode(children[i]);
-                    this.addLink({
-                        nodeA: parentNode,
-                        nodeZ: node,
-                        isAuto: true,
-                        linkType: children.length == 1 ? "Link" : "FlexionalLink",
-                    });
+        // generateTree(parentNode, children) {
+        //     const deviceTypeList = {
+        //         1: "Server",
+        //         2: "Switch",
+        //         3: "Input",
+        //         4: "Export",
+        //     };
+        //     if (children.length) {
+        //         for (let i = 0; i < children.length; i++) {
+        //             let nodeType = deviceTypeList[children[i].deviceType];
+        //             children[i].nodeType = nodeType;
+        //             let node = this.addNode(children[i]);
+        //             this.addLink({
+        //                 nodeA: parentNode,
+        //                 nodeZ: node,
+        //                 isAuto: true,
+        //                 linkType: children.length == 1 ? "Link" : "FlexionalLink",
+        //             });
 
-                    node.setBound(
-                        children[i].x,
-                        children[i].y,
-                        this.defaultNodeWidth,
-                        this.defaultNodeHeigth
-                    );
-                }
-            }
-        },
-        gotoDraw(node) {
-            // 绘制关联设备
-            this.maxChildrenLength =
-                this.maxChildrenLength > node.children.length
-                    ? this.maxChildrenLength
-                    : node.children.length;
-            let width = Math.floor(this.$refs.center.offsetWidth);
-            let gap = (width - node.width) / this.maxChildrenLength;
-            gap = gap <= node.width ? node.width : gap;
-            gap = gap > 5 * node.width ? 5 * node.width : gap;
-            // let center = this.scene.getCenterLocation();
+        //             node.setBound(
+        //                 children[i].x,
+        //                 children[i].y,
+        //                 this.defaultNodeWidth,
+        //                 this.defaultNodeHeigth
+        //             );
+        //         }
+        //     }
+        // },
+        // gotoDraw(node) {
+        //     // 绘制关联设备
+        //     this.maxChildrenLength =
+        //         this.maxChildrenLength > node.children.length
+        //             ? this.maxChildrenLength
+        //             : node.children.length;
+        //     let width = Math.floor(this.$refs.center.offsetWidth);
+        //     let gap = (width - node.width) / this.maxChildrenLength;
+        //     gap = gap <= node.width ? node.width : gap;
+        //     gap = gap > 5 * node.width ? 5 * node.width : gap;
+        //     // let center = this.scene.getCenterLocation();
 
-            node.children.forEach((item, index) => {
-                if (index % 2 == 0) {
-                    // 3 1 0 2 4
-                    item.x = node.x + (index / 2) * gap;
-                } else {
-                    item.x = node.x - ((index + 1) / 2) * gap;
-                }
-                item.y = node.y + 4 * node.height;
-            });
-            if (node.children.length % 2 == 0) {
-                // 根节点位置不变，x坐标微调至子节点中点位置
-                node.x = node.x - gap / 2;
-            }
-            this.generateTree(node, node.children);
-        },
-        removeChildrenNodes() {
-            let nodes =
-                this.scene.findElements((e) => {
-                    return e.parentId == this.currentNode.nodeId;
-                }) || [];
-            nodes.forEach((item) => {
-                this.scene.remove(item);
-            });
-        },
-        createStageFromJson(topoJson) {
-            this.scene.translateX = topoJson.scene?.translateX || 0;
-            this.scene.translateY = topoJson.scene?.translateY || 0;
-            topoJson.nodeList.forEach((item) => {
-                let node = this.addNode(item);
-                node.setBound(item.x, item.y, item.width, item.height);
-            });
-            topoJson.lineList.forEach((item) => {
-                let nodeA = this.scene.findElements((e) => {
-                    return e.nodeId == item.nodeStartId;
-                })[0];
-                let nodeZ = this.scene.findElements((e) => {
-                    return e.nodeId == item.nodeEndId;
-                })[0];
-                this.addLink({ nodeA, nodeZ, ...item });
-            });
-        },
+        //     node.children.forEach((item, index) => {
+        //         if (index % 2 == 0) {
+        //             // 3 1 0 2 4
+        //             item.x = node.x + (index / 2) * gap;
+        //         } else {
+        //             item.x = node.x - ((index + 1) / 2) * gap;
+        //         }
+        //         item.y = node.y + 4 * node.height;
+        //     });
+        //     if (node.children.length % 2 == 0) {
+        //         // 根节点位置不变，x坐标微调至子节点中点位置
+        //         node.x = node.x - gap / 2;
+        //     }
+        //     this.generateTree(node, node.children);
+        // },
+        // removeChildrenNodes() {
+        //     let nodes =
+        //         this.scene.findElements((e) => {
+        //             return e.parentId == this.currentNode.nodeId;
+        //         }) || [];
+        //     nodes.forEach((item) => {
+        //         this.scene.remove(item);
+        //     });
+        // },
+
 
         // 获取当前画布中的所有元素
         getCurrentCanvasData() {
-            let elements = this.scene.getDisplayedElements();
-            elements.reverse(); // 将node置于link之前
-            let nodeList = [];
-            let lineList = [];
-            elements.forEach((item) => {
-                if (item.elementType == "node") {
-                    //点
-                    let element = {};
-                    this.nodeKey.forEach((key) => {
-                        element[key] = item[key];
-                    });
-                    nodeList.push(element);
-                } else if (item.elementType == "link") {
-                    // 连线
-                    let element = {};
-                    this.lineKey.forEach((key) => {
-                        element[key] = item[key];
-                    });
-                    lineList.push(element);
-                }
-            });
-            let topologyId = this.curTab.split("-")[1];
-            let scene = {
-                translateX: this.scene.translateX,
-                translateY: this.scene.translateY,
-            }; // 画布拖拽偏移量
-            let canvasData = {
-                topologyId,
-                scene,
-                lineList,
-                nodeList,
-            };
-            return canvasData;
-        },
-        saveCanvas() {
-            // 后端需要的数据字段
-            //  {
-            //       "elementType": 1,
-            //       "x": 100,
-            //       "y": 100,
-            //       "width": 300,
-            //       "height": 500,
-            //       "nodeId": "1234",
-            //       "parentId": "-1",
-            //       "deviceId": "deviceId",
-            //       "deviceType": 3,
-            //       "text": "Root",
-            //       "fontColor": "
-            //       "icon": "223",
-            //       "children": [],
-            //       "zIndex": 0
-            //     },
-            // let params = this.getCurrentCanvasData();
-            // addTopoData(params).then(() => {
-            //     this.$message.success("保存成功！");
-            // });
-        },
-        // 显示节点的text属性
-        showNodeText(key) {
-            let elements = this.scene.getDisplayedNodes();
-            elements.forEach((item) => {
-                if (item.text) {
-                    if (item.text.indexOf(item.deviceInfo[key]) == -1) {
-                        // 不包含该属性
-                        item.text += " " + item.deviceInfo[key];
-                    }
-                } else {
-                    item.text += item.deviceInfo[key];
-                }
-            });
-        },
-        hideNodeText(key) {
-            let nodes =
-                this.scene.findElements((e) => {
-                    return e.nodeType == (key == "deviceIp" ? "textIp" : "textNode");
-                }) || [];
-            nodes.forEach((item) => {
-                this.scene.remove(item);
-            });
+
         },
     },
     beforeDestroy() {

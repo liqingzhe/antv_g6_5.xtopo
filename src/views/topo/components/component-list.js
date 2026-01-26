@@ -11,9 +11,9 @@ const list = [{
     children: [{
         nodeType: 'Switch',
         label: '交换机',
-        icon: require('@/assets/images/topo/Switch.png'),
-        width: 45,
-        height: 45,
+        iconSrc: require('@/assets/images/topo/Switch.png'),
+        iconWidth: 45,
+        iconHeight: 45,
     }]
 },
 {
@@ -22,16 +22,16 @@ const list = [{
     children: [{
         nodeType: 'PC',
         label: 'PC电脑',
-        icon: require('@/assets/images/topo/PC.png'),
-        width: 45,
-        height: 45,
+        iconSrc: require('@/assets/images/topo/PC.png'),
+        iconWidth: 45,
+        iconHeight: 45,
     },
     {
         nodeType: 'PAD',
         label: '平板电脑',
-        icon: require('@/assets/images/topo/PAD.png'),
-        width: 45,
-        height: 45,
+        iconSrc: require('@/assets/images/topo/PAD.png'),
+        iconWidth: 45,
+        iconHeight: 45,
     }
     ]
 }, {
@@ -40,23 +40,23 @@ const list = [{
     children: [{
         nodeType: 'PinJie',
         label: '拼接屏',
-        icon: require('@/assets/images/topo/PinJie.png'),
-        width: 45,
-        height: 45,
+        iconSrc: require('@/assets/images/topo/PinJie.png'),
+        iconWidth: 45,
+        iconHeight: 45,
     },
     {
         nodeType: 'LED',
         label: 'LED大屏',
-        icon: require('@/assets/images/topo/LED.png'),
-        width: 45,
-        height: 45,
+        iconSrc: require('@/assets/images/topo/LED.png'),
+        iconWidth: 45,
+        iconHeight: 45,
     },
     {
         nodeType: 'Projector',
         label: '投影仪',
-        icon: require('@/assets/images/topo/Projector.png'),
-        width: 45,
-        height: 45,
+        iconSrc: require('@/assets/images/topo/Projector.png'),
+        iconWidth: 45,
+        iconHeight: 45,
     }
     ]
 },
@@ -66,16 +66,16 @@ const list = [{
     children: [{
         nodeType: 'Camera',
         label: '摄像头',
-        icon: require('@/assets/images/topo/Camera.png'),
-        width: 45,
-        height: 45,
+        iconSrc: require('@/assets/images/topo/Camera.png'),
+        iconWidth: 45,
+        iconHeight: 45,
     },
     {
         nodeType: 'NetworkCamera',
         label: '网络摄像头',
-        icon: require('@/assets/images/topo/NetworkCamera.png'),
-        width: 45,
-        height: 45,
+        iconSrc: require('@/assets/images/topo/NetworkCamera.png'),
+        iconWidth: 45,
+        iconHeight: 45,
     }
     ]
 }

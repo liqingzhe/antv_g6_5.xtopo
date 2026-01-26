@@ -11,7 +11,7 @@
                     @dragstart="handleDragStart(item, $event)"
                     :data-index="index"
                 >
-                    <img :src="item.icon" />
+                    <img :src="item.iconSrc" />
                     <span :title="item.label">{{ item.label }}</span>
                 </li>
             </ul>
