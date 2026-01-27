@@ -1,3 +1,4 @@
+
 // 公共样式
 export const commonStyle = {
     rotate: 0,
@@ -12,6 +13,7 @@ const list = [{
         nodeType: 'Switch',
         label: '交换机',
         iconSrc: require('@/assets/images/topo/Switch.png'),
+        iconAlertSrc: require('@/assets/images/topo/Switch-alert.png'),
         iconWidth: 45,
         iconHeight: 45,
     }]
@@ -23,6 +25,7 @@ const list = [{
         nodeType: 'PC',
         label: 'PC电脑',
         iconSrc: require('@/assets/images/topo/PC.png'),
+        iconAlertSrc: require('@/assets/images/topo/PC-alert.png'),
         iconWidth: 45,
         iconHeight: 45,
     },
@@ -30,6 +33,7 @@ const list = [{
         nodeType: 'PAD',
         label: '平板电脑',
         iconSrc: require('@/assets/images/topo/PAD.png'),
+        iconAlertSrc: require('@/assets/images/topo/PAD-alert.png'),
         iconWidth: 45,
         iconHeight: 45,
     }
@@ -41,6 +45,7 @@ const list = [{
         nodeType: 'PinJie',
         label: '拼接屏',
         iconSrc: require('@/assets/images/topo/PinJie.png'),
+        iconAlertSrc: require('@/assets/images/topo/PinJie-alert.png'),
         iconWidth: 45,
         iconHeight: 45,
     },
@@ -48,6 +53,7 @@ const list = [{
         nodeType: 'LED',
         label: 'LED大屏',
         iconSrc: require('@/assets/images/topo/LED.png'),
+        iconAlertSrc: require('@/assets/images/topo/LED-alert.png'),
         iconWidth: 45,
         iconHeight: 45,
     },
@@ -55,6 +61,7 @@ const list = [{
         nodeType: 'Projector',
         label: '投影仪',
         iconSrc: require('@/assets/images/topo/Projector.png'),
+        iconAlertSrc: require('@/assets/images/topo/Projector-alert.png'),
         iconWidth: 45,
         iconHeight: 45,
     }
@@ -67,6 +74,7 @@ const list = [{
         nodeType: 'Camera',
         label: '摄像头',
         iconSrc: require('@/assets/images/topo/Camera.png'),
+        iconAlertSrc: require('@/assets/images/topo/Camera-alert.png'),
         iconWidth: 45,
         iconHeight: 45,
     },
@@ -74,6 +82,7 @@ const list = [{
         nodeType: 'NetworkCamera',
         label: '网络摄像头',
         iconSrc: require('@/assets/images/topo/NetworkCamera.png'),
+        iconAlertSrc: require('@/assets/images/topo/NetworkCamera-alert.png'),
         iconWidth: 45,
         iconHeight: 45,
     }

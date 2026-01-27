@@ -37,22 +37,37 @@ export default {
                 height: this.$refs.container.clientHeight,
                 data: { nodes: [], edges: [] },
                 node: {
+                    size: [80, 80],
+                    state: {
+                        active: {
+                            fill: 'red',
+                            lineWidth: 2,
+
+                        },
+                        // // 悬停状态（可选）
+                        // highlight: {
+                        //     stroke: '#FF6A00',
+                        //     lineWidth: 2,
+                        // },
+                        // disabled: {
+                        //     stroke: '#BFBFBF',
+                        //     opacity: 0.5,
+                        // },
+                    },
                     style: {
-                        size: 45,
-                        fill: "#e6f7ff",
-                        fillOpacity: 0,
-                        stroke: "#1890ff",
-                        lineWidth: 0,
-                        labelFontSize: 12,
+                        labelText: (d) => d.data.label,
+                        labelColor: '#000',
+                        // stroke: '#CCC',
+                        // lineWidth: 1,
+                        // labelFontSize: 12,
                         // 默认设置
-                        // labelPlacement: 'bottom',
-                        // // 多行文本添加
-                        // labelMaxWidth: '200%',
-                        // labelMaxLines: 1,
-                        // labelTextOverflow: 'ellipsis',
+                        labelPlacement: 'bottom',
+                        // 多行文本添加
+                        labelMaxWidth: '200%',
+                        labelMaxLines: 1,
+                        labelTextOverflow: 'ellipsis',
                         labelTextAlign: 'center' // 默认left
                     },
-                    labelText: (d) => d.data.label,
                 },
 
                 edge: {
@@ -60,6 +75,16 @@ export default {
                         stroke: "#fff",
                         lineWidth: 1,
                     },
+                    state: {
+                        selected: {
+                            stroke: 'red',
+                            lineWidth: 1,
+                        },
+                        highlight: {
+                            stroke: 'red',
+                            lineWidth: 1,
+                        }
+                    }
                 },
 
                 behaviors: [
@@ -87,7 +112,7 @@ export default {
                                 menuItems = [
                                     { name: '查看详情', value: 'detail' },
                                     { name: '编辑节点', value: 'edit' },
-                                    { name: '删除节点', value: 'delete', style: { color: 'red' } },
+                                    { name: '删除节点', value: 'delete-node', style: { color: 'red' } },
                                 ];
                             } else if (target && target.type === 'edge') {
                                 // 右键边时的菜单
@@ -105,22 +130,20 @@ export default {
                         onClick: (value, target, current) => {
                             console.log(value, target, current);
                             switch (value) {
-                                case 'delete':
+                                case 'delete-node':
                                     if (current?.id) {
-                                        this.graph.removeData({ nodes: [current.id] });
-                                        this.graph.render();
-                                        console.log(`已删除节点11: ${current.id}`);
+                                        this.deleteNode(current.id);
                                     }
                                     break;
                                 case 'add-node': {
-                                    let id = `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-                                    this.graph.addData({
-                                        nodes: [{
-                                            id,
-                                            x: Math.random() * 600 + 100,
-                                            y: Math.random() * 400 + 100
-                                        }]
-                                    });
+                                    // let id = `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                                    // this.graph.addData({
+                                    //     nodes: [{
+                                    //         id,
+                                    //         x: Math.random() * 600 + 100,
+                                    //         y: Math.random() * 400 + 100
+                                    //     }]
+                                    // });
                                     console.log(`已添加节点: ${id}`);
                                     break;
                                 }
@@ -129,8 +152,7 @@ export default {
                                     break;
                                 case 'delete-edge':
                                     if (current?.id) {
-                                        this.graph.removeData({ edges: [current.id] });
-                                        this.graph.render();
+                                        this.deleteEdge(current.id);
                                     }
                                     break;
                                 default:
@@ -146,13 +168,43 @@ export default {
             this.graph.render();
         },
 
+        // 删除节点方法
+        deleteNode(nodeId) {
+            // 检查是否有与该节点相连的边，如果有则一并删除
+            const edges = this.graph.getData().edges || [];
+            const connectedEdges = edges.filter(edge =>
+                edge.source === nodeId || edge.target === nodeId
+            );
 
+            // 删除与该节点相关的所有边
+            if (connectedEdges.length > 0) {
+                const edgeIds = connectedEdges.map(edge => edge.id);
+                this.graph.removeData({ edges: edgeIds });
+                console.log(`已删除与节点 ${nodeId} 相关的边:`, edgeIds);
+            }
+
+            // 删除节点本身
+            this.graph.removeData({ nodes: [nodeId] });
+            this.graph.render();
+            console.log(`已删除节点: ${nodeId}`);
+
+            // 从选中节点数组中移除该节点
+            this.selectedNodes = this.selectedNodes.filter(node =>
+                typeof node === 'object' ? node.id !== nodeId : node !== nodeId
+            );
+        },
+
+        // 删除边方法
+        deleteEdge(edgeId) {
+            this.graph.removeData({ edges: [edgeId] });
+            this.graph.render();
+            console.log(`已删除连线: ${edgeId}`);
+        },
         bindEvents() {
             // 选中节点
             this.graph.on(NodeEvent.CLICK, (event) => {
-                // 移除调试代码
+                debugger
                 const { target } = event; // 获取被点击节点的 ID
-
                 if (!target || !target.id) {
                     console.warn('点击事件中未找到有效的节点ID');
                     return;
@@ -179,7 +231,17 @@ export default {
                 }
 
                 // 修改节点状态
-                this.graph.setElementState(target.id, 'selected');
+                // this.graph.setElementState(target.id, 'selected');
+                this.graph.updateNodeData([
+                    {
+                        id: target.id,
+                        style: {
+                            src: nodeData.data.iconAlertSrc || "",
+                        }
+                    },
+                ]);
+                this.graph.draw();
+
                 this.selectedNodes.push(nodeData);
 
                 // 如果选中了2个节点，创建连线
@@ -234,7 +296,8 @@ export default {
 
             // 创建新边
             const newEdge = {
-                id: `edge_${sourceId}_${targetId}_${Date.now()}`,
+                id: `edge-${sourceId}-to-${targetId}`,
+                type: 'line',
                 source: sourceId,
                 target: targetId,
                 label: `连线${edges.length + 1}`,
@@ -248,67 +311,60 @@ export default {
 
             console.log(`已创建连接: ${sourceId} -> ${targetId}`);
 
-            // 可选：添加创建成功的视觉反馈
-            this.highlightNewEdge(newEdge.id);
         },
 
-        // 5. 清除选中状态
+        // 清除选中状态
         clearSelection() {
-            // 在 G6 v5.x 中，可能需要使用不同的方法来设置元素状态
             this.selectedNodes.forEach(node => {
                 const nodeId = typeof node === 'object' ? node.id : node;
                 if (nodeId) {
-                    this.graph.setElementState(nodeId, 'selected', false);
+                    this.graph.updateNodeData([
+                        {
+                            id: nodeId,
+                            style: {
+                                src: node.data.iconSrc || "",
+                            }
+                        },
+                    ]);
                 }
-            });
+            })
+            this.graph.draw();
             this.selectedNodes = [];
             console.log('已清除选中状态');
-        },
-
-        // 6. 高亮新创建的边（可选）
-        highlightNewEdge(edgeId) {
-            // 在 G6 v5.x 中，使用 getData 获取元素，而不是 findById
-            const edges = this.graph.getData().edges || [];
-            const edge = edges.find(e => e.id === edgeId);
-
-            if (edge) {
-                // 设置边的状态为激活
-                this.graph.setElementState(edgeId, 'active', true);
-
-                // 3秒后取消高亮
-                setTimeout(() => {
-                    this.graph.setElementState(edgeId, 'active', false);
-                }, 3000);
-            }
         },
         setupResizeListener() {
             window.addEventListener("resize", this.resize);
         },
         addTopoData() { },
-        resize() {
-            if (this.graph && this.$refs.container) {
-                this.graph.setSize(
-                    this.$refs.container.clientWidth,
-                    this.$refs.container.clientHeight
-                );
-            }
-        },
 
         // 添加节点
         addNode(node) {
+            // 矩形节点
+            // const newNode = {
+            //     type: 'rect',
+            //     id: node.id,
+            //     data: {
+            //         label: `${node.label}`,
+            //         nodeType: node.nodeType,
+            //     },
+            //     style: {
+            //         x: node.x,
+            //         y: node.y,
+            //         iconWidth: node.iconWidth,
+            //         iconHeight: node.iconHeight,
+            //         iconSrc: node.iconSrc || "",
+            //     },
+            // };
+            // 图片节点
             const newNode = {
-                type: 'rect',
+                type: 'image',
                 id: node.id,
-                data: {
-                    label: `${node.label}`,
-                    type: node.type,
-                },
+                data: node.nodeData,
                 style: {
                     x: node.x,
                     y: node.y,
-                    iconWidth: node.iconWidth,
-                    iconHeight: node.iconHeight,
-                    iconSrc: node.iconSrc || "",
+                    size: [node.nodeData.iconWidth, node.nodeData.iconHeight],
+                    src: node.nodeData.iconSrc || "",
                 },
             };
             this.graph.addData({
@@ -329,13 +385,9 @@ export default {
 
             this.addNode({
                 id: `node-${Date.now()}`,
-                type: nodeData.nodeType,
-                label: nodeData.label,
                 x,
                 y,
-                iconSrc: nodeData.iconSrc,
-                iconWidth: nodeData.iconWidth,
-                iconHeight: nodeData.iconHeight,
+                nodeData
             });
         },
 
@@ -343,174 +395,65 @@ export default {
             e.preventDefault();
             e.dataTransfer.dropEffect = "copy";
         },
-        // rightClickHandler(item) {
-        //     if (item.type == "bindDevice") {
-        //         // 为图标组件绑定具体设备
-        //         this.$emit("bindDevice", {
-        //             text: item.text,
-        //             type: item.type,
-        //             node: this.currentNode,
-        //         });
-        //     } else if (item.type == "bindLinkDevice") {
-        //         if (!this.currentNode.deviceId) {
-        //             this.$message.warning("请先绑定设备");
-        //             return false;
-        //         }
-        //         this.$emit("bindDevice", {
-        //             text: item.text,
-        //             type: item.type,
-        //             node: this.currentNode,
-        //         });
-        //     } else if (item.type == "delete") {
-        //         if (this.rightMenuType == "nodeMenu") {
-        //             // 删除设备
-        //             if (this.currentNode.parentId) {
-        //                 let nodes =
-        //                     this.scene.findElements((e) => {
-        //                         return e.nodeId == this.currentNode.parentId;
-        //                     }) || []; // 父节点手动删除该数据字段
-        //                 nodes.forEach((node) => {
-        //                     let index = node.children.findIndex((iitem) => {
-        //                         return iitem.deviceId == this.currentNode.deviceId;
-        //                     });
-        //                     node.children.splice(index, 1);
-        //                 });
-        //             }
-        //             this.scene.remove(this.currentNode);
-        //             this.currentNode = null;
-        //         } else if (this.rightMenuType == "linkMenu") {
-        //             // 删除连线
-        //             this.scene.remove(this.currentLink);
-        //             this.currentLink = null;
-        //         } else if (this.rightMenuType == "nodeRootMenu") {
-        //             if (this.currentNode.children && this.currentNode.children.length) {
-        //                 // 删除选中节点及其子节点
-        //                 this.removeChildrenNodes();
-        //                 this.currentNode.children = null;
-        //             }
-        //             this.scene.remove(this.currentNode);
-        //             this.currentNode = null;
-        //         }
-        //     } else {
-        //         // 刪除关联设备
-        //         this.$confirm("确认删除关联设备？", "删除提示", {
-        //             confirmButtonText: "确定",
-        //             cancelButtonText: "取消",
-        //             cancelButtonClass: "cancel-btn",
-        //             confirmButtonClass: "confirm-btn",
-        //             type: "warning",
-        //         })
-        //             .then(() => {
-        //                 this.removeChildrenNodes();
-        //                 this.currentNode.children = null;
-        //             })
-        //             .catch(() => {
-        //                 this.$message({
-        //                     type: "info",
-        //                     message: "已取消删除",
-        //                 });
-        //             });
-        //     }
-        //     this.isShowRightMenu = false;
-        //     return false;
-        // },
+
+        // 清空画布
         clearCanvas() {
-            this.scene.clear();
+            this.graph.clear();
         },
-        // setBindData({ data, type }) {
-        //     if (type == "bindDevice") {
-        //         // 绑定设备
-        //         this.currentNode.deviceId = data[0].deviceId; // 设备id
-        //         this.currentNode.deviceType = data[0].deviceType; // 设备类型
-        //         this.currentNode.deviceInfo = data[0].deviceInfo;
-        //         this.currentNode.text = data[0].name;
-        //     } else if (type == "bindLinkDevice") {
-        //         // 绑定关联设备 自动生成拓扑图
-        //         // todo 在画布中绘制。。。
-        //         this.removeChildrenNodes();
-        //         let children = data.map((item) => {
-        //             return {
-        //                 deviceId: item.deviceId,
-        //                 deviceType: item.deviceType,
-        //                 text: item.name,
-        //                 deviceInfo: item.deviceInfo,
-        //                 parentId: this.currentNode.nodeId,
-        //             };
-        //         });
-        //         this.currentNode.children = children;
-        //         this.gotoDraw(this.currentNode);
-        //     }
-        // },
-        addLink() { },
-        // generateTree(parentNode, children) {
-        //     const deviceTypeList = {
-        //         1: "Server",
-        //         2: "Switch",
-        //         3: "Input",
-        //         4: "Export",
-        //     };
-        //     if (children.length) {
-        //         for (let i = 0; i < children.length; i++) {
-        //             let nodeType = deviceTypeList[children[i].deviceType];
-        //             children[i].nodeType = nodeType;
-        //             let node = this.addNode(children[i]);
-        //             this.addLink({
-        //                 nodeA: parentNode,
-        //                 nodeZ: node,
-        //                 isAuto: true,
-        //                 linkType: children.length == 1 ? "Link" : "FlexionalLink",
-        //             });
-
-        //             node.setBound(
-        //                 children[i].x,
-        //                 children[i].y,
-        //                 this.defaultNodeWidth,
-        //                 this.defaultNodeHeigth
-        //             );
-        //         }
-        //     }
-        // },
-        // gotoDraw(node) {
-        //     // 绘制关联设备
-        //     this.maxChildrenLength =
-        //         this.maxChildrenLength > node.children.length
-        //             ? this.maxChildrenLength
-        //             : node.children.length;
-        //     let width = Math.floor(this.$refs.center.offsetWidth);
-        //     let gap = (width - node.width) / this.maxChildrenLength;
-        //     gap = gap <= node.width ? node.width : gap;
-        //     gap = gap > 5 * node.width ? 5 * node.width : gap;
-        //     // let center = this.scene.getCenterLocation();
-
-        //     node.children.forEach((item, index) => {
-        //         if (index % 2 == 0) {
-        //             // 3 1 0 2 4
-        //             item.x = node.x + (index / 2) * gap;
-        //         } else {
-        //             item.x = node.x - ((index + 1) / 2) * gap;
-        //         }
-        //         item.y = node.y + 4 * node.height;
-        //     });
-        //     if (node.children.length % 2 == 0) {
-        //         // 根节点位置不变，x坐标微调至子节点中点位置
-        //         node.x = node.x - gap / 2;
-        //     }
-        //     this.generateTree(node, node.children);
-        // },
-        // removeChildrenNodes() {
-        //     let nodes =
-        //         this.scene.findElements((e) => {
-        //             return e.parentId == this.currentNode.nodeId;
-        //         }) || [];
-        //     nodes.forEach((item) => {
-        //         this.scene.remove(item);
-        //     });
-        // },
-
-
         // 获取当前画布中的所有元素
-        getCurrentCanvasData() {
+        saveDatas() {
+            const graphData = this.graph.getData();
+            console.log('节点数据:', graphData.nodes);
+            console.log('边数据:', graphData.edges);
+            console.log('组合数据:', graphData.combos);
+        },
+        // 下载图像文件
+        downloadImage(dataUrl, filename) {
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        },
+        // 下载拓扑图为PNG
+        async downloadAsPNG() {
+            try {
+                const imgData = await this.graph.toDataURL('image/png');
+                this.downloadImage(imgData, 'topology-diagram.png');
+            } catch (error) {
+                console.error('导出PNG失败:', error);
+                alert('导出PNG失败，请重试');
+            }
+        },
 
+        // 下载拓扑图为JPEG
+        async downloadAsJPEG() {
+            try {
+                const imgData = await this.graph.toDataURL('image/jpeg');
+                this.downloadImage(imgData, 'topology-diagram.jpg');
+            } catch (error) {
+                console.error('导出JPEG失败:', error);
+                alert('导出JPEG失败，请重试');
+            }
+        },
+        // 下载拓扑图为SVG
+        async downloadAsSVG() {
+            try {
+                const svgData = await this.graph.toDataURL('image/svg+xml');
+                this.downloadImage(svgData, 'topology-diagram.svg');
+            } catch (error) {
+                console.error('导出SVG失败:', error);
+                alert('导出SVG失败，请重试');
+            }
+        },
+        resize() {
+            if (this.graph && this.$refs.container) {
+                this.graph.setSize(
+                    this.$refs.container.clientWidth,
+                    this.$refs.container.clientHeight
+                );
+            }
         },
     },
     beforeDestroy() {
