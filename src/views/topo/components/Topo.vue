@@ -55,26 +55,45 @@ export default {
                         // },
                     },
                     style: {
-                        labelText: (d) => d.data.label,
-                        labelColor: '#000',
-                        // stroke: '#CCC',
-                        // lineWidth: 1,
-                        // labelFontSize: 12,
+                        labelText: (datum) => datum.data.label,
+                        // 字体颜色
+                        labelFill: '#fff',
+                        // labelBackgroundFill: 'rgba(250, 140, 22, 0.1)',
+                        // labelBackgroundRadius: 6,
+                        // labelPadding: [6, 12],
                         // 默认设置
                         labelPlacement: 'bottom',
                         // 多行文本添加
+                        labelWordWrap: true,
                         labelMaxWidth: '200%',
                         labelMaxLines: 1,
                         labelTextOverflow: 'ellipsis',
-                        labelTextAlign: 'center' // 默认left
+                        labelTextAlign: 'center', // 默认left
+                        // 徽标
+                        // badges: [
+                        //     {
+                        //         text: '99+',
+                        //         placement: 'right-top',
+                        //         backgroundFill: '#FF4D4F', // 红色背景
+                        //         fill: '#fff', // 白色文字
+                        //         fontSize: 10,
+                        //         padding: [2, 6],
+                        //         backgroundRadius: 8,
+                        //     },
+                        // ],
                     },
                 },
 
                 edge: {
+                    type: (datum) => datum.data.edgeType || 'line',
                     style: {
                         stroke: "#fff",
                         lineWidth: 1,
+                        labelText: (datum) => datum.data.label,
+                        labelAutoRotate: true, // 自动旋转
+                        labelFill: '#1890FF',
                     },
+
                     state: {
                         selected: {
                             stroke: 'red',
@@ -297,10 +316,11 @@ export default {
             // 创建新边
             const newEdge = {
                 id: `edge-${sourceId}-to-${targetId}`,
-                type: 'line',
                 source: sourceId,
                 target: targetId,
-                label: `连线${edges.length + 1}`,
+                data: {
+                    label: `连线`
+                }
             };
 
             // 添加边
