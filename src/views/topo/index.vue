@@ -12,6 +12,7 @@
                     <el-button @click="saveDatas" type="primary">保存</el-button>
                 </div>
                 <topo @bindDevice="showDeviceTree" type="edit" ref="topo" />
+
             </el-main>
         </el-container>
         <!-- <device-tree ref="deviceTree" /> -->
@@ -66,21 +67,23 @@ export default {
 </script>
 <style lang="scss" scoped>
 .edit {
-    height: 100%;
+    height: calc(100% - 20px);
 
     .el-container {
         height: 100%;
 
         .el-aside {
-            background-color: #182530;
+            height: 100%;
+            background-color: #333;
             margin-right: 14px;
-            background: url(~@/assets/images/common/border-bottom.png) no-repeat 100% bottom;
 
             .top-title {
                 font-size: 16px;
                 width: 290px;
                 height: 35px;
                 line-height: 35px;
+                text-align: left;
+                color: #FFF;
                 background-image: url(~@/assets/images/common/title.png);
                 padding-left: 36px;
             }
@@ -89,6 +92,7 @@ export default {
 
     .el-main {
         padding: 0;
+        height: 100%;
 
         .top-bar {
             height: 40px;

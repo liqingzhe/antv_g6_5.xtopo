@@ -18,7 +18,7 @@ export default {
         return {
             type: "", // 编辑模式edit 详情模式detail
             graph: null, // 图表实例
-            gridSize: 0,
+            gridSize: 20,
             selectedNodes: [], // 被选中的节点
             nodeCounter: 0,
         };
@@ -27,12 +27,14 @@ export default {
     mounted() {
         this.initGraph();
         this.bindEvents();
-        this.setupResizeListener();
+        // this.setupResizeListener();
     },
     methods: {
         initGraph() {
             this.graph = new Graph({
                 container: this.$refs.container,
+                autoResize: true, // 画布自适应
+                // background: '#182530', // 画布背景色
                 width: this.$refs.container.clientWidth,
                 height: this.$refs.container.clientHeight,
                 data: { nodes: [], edges: [] },
@@ -114,11 +116,31 @@ export default {
                 ],
 
                 plugins: [
+                    //设置栅格
                     {
                         type: "grid-line",
+                        key: 'my-grid-line',
                         size: this.gridSize,
-                        color: "#ccc",
-                        visible: false,
+                        stroke: "#ccc",
+                        visible: true,
+                    },
+                    // 设置背景 如果设置了栅格，只能在此处设置背景
+                    {
+                        type: 'background',
+                        backgroundImage:
+                            'url(https://mdn.alipayobjects.com/huamei_qa8qxu/afts/img/A*0Qq0ToQm1rEAAAAAAAAAAAAADmJ7AQ/original)',
+                        backgroundRepeat: 'no-repeat',
+                        backgroundSize: 'cover',
+                        backgroundColor: '#182530',
+                        opacity: 0.3,
+                    },
+                    // 对齐线插件
+                    {
+                        type: 'snapline',
+                        key: 'my-snapline', // 指定唯一标识符
+                        tolerance: 5, // 对齐吸附阈值
+                        offset: 20, // 对齐线延伸距离
+                        autoSnap: true, // 启用自动吸附
                     },
                     {
                         type: 'contextmenu',
@@ -488,14 +510,14 @@ export default {
 <style scoped lang="scss">
 .center {
     width: 100%;
+    height: calc(100% - 40px);
     //   background-color: #182530;
     border: 1px solid red;
-    height: calc(100% - 40px);
-    overflow: auto;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
+    overflow: hidden; // 如不设置会导致因滚动条的出现 画布高度低于外部容器高度16px
 
     .graph-container {
         width: 100%;

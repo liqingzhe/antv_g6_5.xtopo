@@ -3,14 +3,8 @@
         <div v-for="list in componentList" :key="list.type" class="tab-list">
             <div class="title"><i class="icon"></i>{{ list.label }}</div>
             <ul class="content">
-                <li
-                    v-for="(item, index) in list.children"
-                    :key="item.nodeType"
-                    class="item"
-                    draggable
-                    @dragstart="handleDragStart(item, $event)"
-                    :data-index="index"
-                >
+                <li v-for="(item, index) in list.children" :key="item.nodeType" class="item" draggable
+                    @dragstart="handleDragStart(item, $event)" :data-index="index">
                     <img :src="item.iconSrc" />
                     <span :title="item.label">{{ item.label }}</span>
                 </li>
@@ -40,17 +34,19 @@ export default {
 <style lang="scss" scoped>
 .component-list {
     padding: 10px 20px;
-    background: #333;
+    
     .tab-list {
         cursor: grab;
         color: #333;
         color: #fff;
         overflow: hidden;
         margin-bottom: 20px;
+
         .title {
             font-size: 16px;
             line-height: 32px;
             margin-bottom: 14px;
+
             .icon {
                 display: inline-block;
                 width: 18px;
@@ -60,14 +56,17 @@ export default {
                 background-image: url(~@/assets/images/icon/title-icon.png);
             }
         }
+
         .content {
             padding: 0 10px;
             margin-right: -25px;
         }
+
         .item {
             float: left;
             margin-right: 25px;
             text-align: center;
+
             img {
                 display: block;
                 width: 58px;

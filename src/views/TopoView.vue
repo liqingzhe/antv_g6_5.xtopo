@@ -162,7 +162,7 @@ export default {
                     {
                         type: "grid-line",
                         size: this.gridSize,
-                        color: "#f0f0f0",
+                        stroke: "#eee",
                         visible: this.showGrid,
                     },
                 ],
@@ -184,7 +184,6 @@ export default {
         handleDrop(event) {
             event.preventDefault();
             if (!this.dragNodeType) return;
-            debugger;
             const containerRect = this.$refs.container.getBoundingClientRect();
             const x = event.clientX - containerRect.left;
             const y = event.clientY - containerRect.top;
